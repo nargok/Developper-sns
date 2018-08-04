@@ -9,7 +9,7 @@ const ProfileSchema = new Schema({
   },
   handle: {
     type: String,
-    require: true,
+    required: true,
     max: 40
   },
   company: {
@@ -95,9 +95,6 @@ const ProfileSchema = new Schema({
     }
   ],
   social: {
-    youtube: {
-      type: String
-    },
     youtube: {
       type: String
     },

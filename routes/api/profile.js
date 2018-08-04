@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const mongoogse = require('mongoose');
+const mongoose = require('mongoose');
 const passport = require('passport');
+
+// Load Validation
+const validateProfileInput = require('../../validation/profile');
 
 // Load Profile Model
 const Profile = require('../../models/Profile');
-// Load User Profile
+// Load User Model
 const User = require('../../models/User');
 
 // @route  GET api/profile/test
@@ -23,6 +26,7 @@ router.get(
     const errors = {};
 
     Profile.findOne({ user: req.user.id })
+      .populate('user', [ 'name', 'avatar' ])
       .then(profile => {
         if(!profile) {
           errors.noprofile = "There is no profile for this user";
@@ -38,8 +42,16 @@ router.get(
 // @access Private
 router.post(
   '/',
-  passport.authenticate('jwt', { session: false}),
+  passport.authenticate('jwt', { session: false }),
   (req, res) => {
+    const { errors, isValid } = validateProfileInput(req.body);
+
+    // Check Validation
+    if(!isValid) {
+      // Return any errors with 400 status
+      return res.status(400).json(errors);
+    }
+
     // Get fields
     const profileFields = {};
     profileFields.user = req.user.id;
@@ -48,9 +60,10 @@ router.post(
     if(req.body.website) profileFields.website = req.body.website;
     if(req.body.location) profileFields.location = req.body.location;
     if(req.body.bio) profileFields.bio = req.body.bio;
+    if(req.body.status) profileFields.status = req.body.status;
     if(req.body.githubusername) profileFields.githubusername = req.body.githubusername;
 
-    // skills - Spit into array
+    // skills - Split into array
     if(typeof req.body.skills !== 'undefined') {
       profileFields.skills = req.body.skills.split(',');
     }
@@ -76,7 +89,7 @@ router.post(
           // Create
 
           // Check if handle exists
-          profile.findOne({ handle: profileFields.handle }).then(profile => {
+          Profile.findOne({ handle: profileFields.handle }).then(profile => {
             if(profile) {
               errors.handle = "That handle already exists";
               res.status(400).json(errors);
